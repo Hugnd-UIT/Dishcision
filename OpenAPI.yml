@@ -1,0 +1,2585 @@
+openapi: 3.0.3
+info:
+  title: Dishcision API
+  description: None
+  version: 1.0.0
+
+servers:
+  - url: https://api.dishcision.com/api/v1
+    description: Production enviroment
+
+  - url: http://localhost:3000/api/v1
+    description: Development enviroment
+
+tags:
+  - name: Auth
+    description: AuthZ & AuthN
+  - name: Users
+    description: Users profile
+  - name: Preferences
+    description: User preferences
+  - name: Posts
+    description: Posts
+  - name: Interactions
+    description: Like, comment, share
+  - name: Reviews
+    description: User reviews
+  - name: Decisions
+    description: User decisions
+  - name: AI
+    description: AI decisions
+  - name: Social
+    description: Follow posts, save posts, messages
+  - name: Search
+    description: Search & Explore
+  - name: Notifications
+    description: Notifications
+  - name: Reports
+    description: Reports
+  - name: Admin
+    description: Admin only
+
+# SECURITY
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Successful"
+        data:
+          type: object
+
+    PaginatedMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 10
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "An error occurred"
+        error:
+          type: string
+
+    # ── User ──────────────────────────────
+    UserPublic:
+      type: object
+      properties:
+        userId:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: "nguyen-van-a"
+        fullName:
+          type: string
+          example: "Nguyen Van A"
+        avatarUrl:
+          type: string
+          format: uri
+          example: "https://cdn.dishcision.com/avatars/1.jpg"
+        bio:
+          type: string
+          example: "Passionate about Vietnamese cuisine 🍜"
+        followersCount:
+          type: integer
+          example: 1200
+        followingCount:
+          type: integer
+          example: 340
+        role:
+          type: string
+          enum: [User, RestaurantAccount, Admin]
+          example: "User"
+
+    UserPrivate:
+      allOf:
+        - $ref: "#/components/schemas/UserPublic"
+        - type: object
+          properties:
+            email:
+              type: string
+              format: email
+              example: "nguyen@example.com"
+            gender:
+              type: string
+              enum: [Male, Female, Other]
+            dateOfBirth:
+              type: string
+              format: date
+              example: "2000-05-15"
+            accountStatus:
+              type: string
+              enum: [Active, Banned, Suspended]
+            createdAt:
+              type: string
+              format: date-time
+
+    # ── Auth ──────────────────────────────
+    RegisterRequest:
+      type: object
+      required: [username, email, password, fullName]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: "nguyen-van-a"
+        email:
+          type: string
+          format: email
+          example: "nguyen@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "Passw0rd!23"
+        fullName:
+          type: string
+          example: "Nguyen Van A"
+
+    LoginRequest:
+      type: object
+      required: [credential, password]
+      properties:
+        credential:
+          type: string
+          description: "Email or username"
+          example: "nguyen@example.com"
+        password:
+          type: string
+          format: password
+          example: "Passw0rd!23"
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+        expiresIn:
+          type: integer
+          description: "Access token expiration time (seconds)"
+          example: 3600
+        user:
+          $ref: "#/components/schemas/UserPublic"
+
+    # ── Preference ────────────────────────
+    FoodPreference:
+      type: object
+      properties:
+        preferenceId:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Spicy food"
+        description:
+          type: string
+          example: "Dishes with hot and spicy flavor"
+        icon:
+          type: string
+          example: "🌶️"
+
+    # ── Post ──────────────────────────────
+    PostImage:
+      type: object
+      properties:
+        imageId:
+          type: integer
+        imageUrl:
+          type: string
+          format: uri
+          example: "https://cdn.dishcision.com/posts/img1.jpg"
+        displayOrder:
+          type: integer
+          example: 1
+
+    Post:
+      type: object
+      properties:
+        postId:
+          type: integer
+          example: 42
+        author:
+          $ref: "#/components/schemas/UserPublic"
+        content:
+          type: string
+          example: "Hanoi beef pho this morning was delicious! 🍜"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostImage"
+        locationUrl:
+          type: string
+          format: uri
+          example: "https://maps.google.com/?q=Pho+Thin+Ha+Noi"
+        voucherCode:
+          type: string
+          example: "DISH20"
+        hashtags:
+          type: array
+          items:
+            type: string
+          example: ["#pho", "#hanoi", "#breakfast"]
+        likesCount:
+          type: integer
+          example: 235
+        commentsCount:
+          type: integer
+          example: 18
+        sharesCount:
+          type: integer
+          example: 7
+        isLiked:
+          type: boolean
+          example: false
+        isSaved:
+          type: boolean
+          example: false
+        isPinned:
+          type: boolean
+          example: false
+        status:
+          type: string
+          enum: [Active, Hidden, Deleted]
+          example: "Active"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreatePostRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          maxLength: 2000
+          example: "Hanoi beef pho this morning was delicious! 🍜"
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              imageUrl:
+                type: string
+                format: uri
+              displayOrder:
+                type: integer
+        locationUrl:
+          type: string
+          format: uri
+        voucherCode:
+          type: string
+        hashtags:
+          type: array
+          items:
+            type: string
+
+    # ── Comment ──────────────────────────
+    Comment:
+      type: object
+      properties:
+        commentId:
+          type: integer
+          example: 10
+        author:
+          $ref: "#/components/schemas/UserPublic"
+        content:
+          type: string
+          example: "Looks so delicious, can you share the address?"
+        parentCommentId:
+          type: integer
+          nullable: true
+          example: null
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+        likesCount:
+          type: integer
+          example: 5
+        createdAt:
+          type: string
+          format: date-time
+
+    # ── Review ──────────────────────────
+    Review:
+      type: object
+      properties:
+        reviewId:
+          type: integer
+        author:
+          $ref: "#/components/schemas/UserPublic"
+        restaurantName:
+          type: string
+          example: "Pho Thin Lo Duc"
+        locationUrl:
+          type: string
+          format: uri
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        content:
+          type: string
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostImage"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["Delicious", "Clean", "Authentic"]
+        createdAt:
+          type: string
+          format: date-time
+
+    # ── Food Decision ────────────────────
+    FoodCategory:
+      type: object
+      properties:
+        categoryId:
+          type: integer
+        name:
+          type: string
+          example: "Noodle and soup dishes"
+        icon:
+          type: string
+          example: "🍜"
+
+    RandomWheelRequest:
+      type: object
+      properties:
+        budget:
+          type: integer
+          description: "Maximum budget (VND)"
+          example: 80000
+        distance:
+          type: number
+          description: "Search radius (km)"
+          example: 2.5
+        preferenceIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 3]
+        latitude:
+          type: number
+          example: 21.0278
+        longitude:
+          type: number
+          example: 105.8342
+
+    RandomWheelResult:
+      type: object
+      properties:
+        dishName:
+          type: string
+          example: "Hue Beef Noodle Soup"
+        restaurant:
+          type: object
+          properties:
+            name:
+              type: string
+              example: "Bun Bo Me Thao"
+            address:
+              type: string
+              example: "15 Hang Bong, Hoan Kiem, Hanoi"
+            mapsUrl:
+              type: string
+              format: uri
+              example: "https://maps.google.com/?q=Bun+Bo+Me+Thao"
+            estimatedPrice:
+              type: integer
+              example: 55000
+            rating:
+              type: number
+              example: 4.7
+
+    # ── AI ───────────────────────────────
+    AIFoodDecideRequest:
+      type: object
+      properties:
+        mood:
+          type: string
+          example: "feeling sad"
+        budget:
+          type: string
+          example: "50k-100k"
+        companions:
+          type: integer
+          description: "Number of dining companions"
+          example: 2
+        craving:
+          type: string
+          example: "warm soup, rich broth"
+        preferenceIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 4]
+
+    AIFoodDecideResponse:
+      type: object
+      properties:
+        requestId:
+          type: integer
+          example: 88
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              rank:
+                type: integer
+              dishName:
+                type: string
+                example: "Hue Beef Noodle Soup"
+              reason:
+                type: string
+                example: "Perfect for comforting soup cravings with a bold flavor"
+              estimatedPrice:
+                type: string
+                example: "50,000 - 80,000 VND"
+        modelUsed:
+          type: string
+          example: "gemini-2.0-flash"
+
+    # ── Notification ─────────────────────
+    Notification:
+      type: object
+      properties:
+        notificationId:
+          type: integer
+        type:
+          type: string
+          enum: [Like, Comment, Share, Follow, System]
+        message:
+          type: string
+          example: "foodie_tran liked your post"
+        isRead:
+          type: boolean
+        relatedPostId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    # ── Report ──────────────────────────
+    ReportRequest:
+      type: object
+      required: [reason]
+      properties:
+        postId:
+          type: integer
+          nullable: true
+          description: "Reported post ID (if any)"
+        reportedUserId:
+          type: integer
+          nullable: true
+          description: "Reported user ID (if any)"
+        reason:
+          type: string
+          enum: [Spam, Nudity, Violence, FakeNews, Harassment, Other]
+          example: "Spam"
+        description:
+          type: string
+          example: "This post repeatedly displays spam advertisements"
+
+    # ── Message ──────────────────────────
+    Message:
+      type: object
+      properties:
+        messageId:
+          type: integer
+        sender:
+          $ref: "#/components/schemas/UserPublic"
+        content:
+          type: string
+          example: "The restaurant you recommended was truly great!"
+        mediaUrl:
+          type: string
+          format: uri
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    # ── AuditLog ─────────────────────────
+    AuditLog:
+      type: object
+      properties:
+        logId:
+          type: integer
+        admin:
+          $ref: "#/components/schemas/UserPublic"
+        action:
+          type: string
+          example: "BAN_USER"
+        targetType:
+          type: string
+          enum: [User, Post, Comment, Report, AIConfig]
+        targetId:
+          type: integer
+        ipAddress:
+          type: string
+          example: "118.71.32.10"
+        details:
+          type: string
+          example: "Banned user ID 55 due to spam advertising"
+        createdAt:
+          type: string
+          format: date-time
+
+# ─────────────────────────────────────────
+# PATHS
+# ─────────────────────────────────────────
+paths:
+  # ════════════════════════════════════════
+  # AUTH
+  # ════════════════════════════════════════
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/TokenResponse"
+        "409":
+          description: Email or username already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Forgot password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "nguyen@example.com"
+      responses:
+        "200":
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tokenHash, newPassword]
+              properties:
+                tokenHash:
+                  type: string
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        "200":
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change password
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        "200":
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Current password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ════════════════════════════════════════
+  # USERS
+  # ════════════════════════════════════════
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get user profile
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/UserPrivate"
+    put:
+      tags: [Users]
+      summary: Update user profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                bio:
+                  type: string
+                  maxLength: 255
+                gender:
+                  type: string
+                  enum: [Male, Female, Other]
+                dateOfBirth:
+                  type: string
+                  format: date
+                avatarUrl:
+                  type: string
+                  format: uri
+      responses:
+        "200":
+          description: Update successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/UserPrivate"
+
+  /users/{userId}:
+    get:
+      tags: [Users]
+      summary: View another user profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/UserPublic"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/me/saved-posts:
+    get:
+      tags: [Social]
+      summary: Get saved posts list
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Post"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+
+  /users/{userId}/follow:
+    post:
+      tags: [Social]
+      summary: Follow user or restaurant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Follow successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "409":
+          description: Already following
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags: [Social]
+      summary: Unfollow user or restaurant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unfollow successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /users/{userId}/posts:
+    get:
+      tags: [Posts]
+      summary: Get posts by user ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Post"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+
+  # ════════════════════════════════════════
+  # PREFERENCES
+  # ════════════════════════════════════════
+  /preferences:
+    get:
+      tags: [Preferences]
+      summary: List system food preferences
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/FoodPreference"
+
+  /users/me/preferences:
+    get:
+      tags: [Preferences]
+      summary: Get current user food preferences
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/FoodPreference"
+    put:
+      tags: [Preferences]
+      summary: Update user food preferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preferenceIds]
+              properties:
+                preferenceIds:
+                  type: array
+                  items:
+                    type: integer
+                  example: [1, 3, 5]
+      responses:
+        "200":
+          description: Update successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ════════════════════════════════════════
+  # POSTS
+  # ════════════════════════════════════════
+  /posts:
+    get:
+      tags: [Posts]
+      summary: Get culinary post newsfeed
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [latest, trending, following]
+            default: latest
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Post"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+    post:
+      tags: [Posts]
+      summary: Create new culinary post
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePostRequest"
+      responses:
+        "201":
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Post"
+
+  /posts/upload-media:
+    post:
+      tags: [Posts]
+      summary: Upload media to cloud storage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Upload successful, returns URL
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          url:
+                            type: string
+                            format: uri
+                            example: "https://cdn.dishcision.com/posts/abc123.jpg"
+
+  /posts/{postId}:
+    get:
+      tags: [Posts]
+      summary: View post details
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Post"
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      tags: [Posts]
+      summary: Edit post (author only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePostRequest"
+      responses:
+        "200":
+          description: Update successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Post"
+        "403":
+          description: Not authorized to edit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags: [Posts]
+      summary: Delete post (author only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Delete successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ────────────────────────────────────────
+  # POST INTERACTIONS
+  # ────────────────────────────────────────
+  /posts/{postId}/likes:
+    post:
+      tags: [Interactions]
+      summary: Like post
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Liked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+    delete:
+      tags: [Interactions]
+      summary: Unlike post
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unliked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+    get:
+      tags: [Interactions]
+      summary: List users who liked post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/UserPublic"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+
+  /posts/{postId}/comments:
+    get:
+      tags: [Interactions]
+      summary: Get comments list (hierarchical)
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Comment"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+    post:
+      tags: [Interactions]
+      summary: Add comment or reply
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  maxLength: 1000
+                  example: "Looks so delicious, can you share the address?"
+                parentCommentId:
+                  type: integer
+                  nullable: true
+                  description: "Specify if replying to a comment"
+      responses:
+        "201":
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Comment"
+
+  /comments/{commentId}:
+    delete:
+      tags: [Interactions]
+      summary: Delete comment (author only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comment deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /posts/{postId}/shares:
+    post:
+      tags: [Interactions]
+      summary: Share post
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Shared successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /posts/{postId}/save:
+    post:
+      tags: [Social]
+      summary: Save post to bookmarks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+    delete:
+      tags: [Social]
+      summary: Remove post from bookmarks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Removed from bookmarks successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ════════════════════════════════════════
+  # REVIEWS
+  # ════════════════════════════════════════
+  /reviews:
+    get:
+      tags: [Reviews]
+      summary: List reviews
+      parameters:
+        - name: restaurantName
+          in: query
+          schema:
+            type: string
+        - name: rating
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Review"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+    post:
+      tags: [Reviews]
+      summary: Post new review
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [restaurantName, rating, content]
+              properties:
+                restaurantName:
+                  type: string
+                  example: "Pho Thin Lo Duc"
+                locationUrl:
+                  type: string
+                  format: uri
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                content:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      imageUrl:
+                        type: string
+                        format: uri
+                      displayOrder:
+                        type: integer
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Delicious", "Clean"]
+      responses:
+        "201":
+          description: Review posted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Review"
+
+  /reviews/{reviewId}:
+    delete:
+      tags: [Reviews]
+      summary: Delete review (author only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Delete successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ════════════════════════════════════════
+  # FOOD DECISION
+  # ════════════════════════════════════════
+  /food-decision/categories:
+    get:
+      tags: [Decisions]
+      summary: Get filter categories for random wheel
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/FoodCategory"
+
+  /food-decision/random-wheel:
+    post:
+      tags: [Decisions]
+      summary: Spin random food decision wheel
+      description: Takes filter criteria, returns randomized dish recommendation and restaurant with Google Maps directions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RandomWheelRequest"
+      responses:
+        "200":
+          description: Random wheel result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RandomWheelResult"
+
+  # ════════════════════════════════════════
+  # AI
+  # ════════════════════════════════════════
+  /ai/food-decide:
+    post:
+      tags: [AI]
+      summary: AI food recommendation assistant
+      description: Calls LLM with mood, budget, and cravings to provide personalized food suggestions
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIFoodDecideRequest"
+      responses:
+        "200":
+          description: Suggestion generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/AIFoodDecideResponse"
+        "503":
+          description: AI service currently unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /ai/requests/{requestId}/feedback:
+    post:
+      tags: [AI]
+      summary: Submit feedback for AI result
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 4
+                comment:
+                  type: string
+                  example: "Great suggestion, suited my mood well!"
+      responses:
+        "201":
+          description: Feedback recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ════════════════════════════════════════
+  # CHAT / MESSAGES
+  # ════════════════════════════════════════
+  /chats:
+    get:
+      tags: [Social]
+      summary: List recent conversations
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            recipient:
+                              $ref: "#/components/schemas/UserPublic"
+                            lastMessage:
+                              $ref: "#/components/schemas/Message"
+                            unreadCount:
+                              type: integer
+
+  /chats/{recipientId}/messages:
+    get:
+      tags: [Social]
+      summary: Get message history with a user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: recipientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Message"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+    post:
+      tags: [Social]
+      summary: Send text message or media
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: recipientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  example: "The restaurant you recommended was truly great!"
+                mediaUrl:
+                  type: string
+                  format: uri
+                  nullable: true
+      responses:
+        "201":
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Message"
+
+  # ════════════════════════════════════════
+  # SEARCH
+  # ════════════════════════════════════════
+  /search/food:
+    get:
+      tags: [Search]
+      summary: Search food dishes
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "beef noodles"
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: priceMin
+          in: query
+          schema:
+            type: integer
+        - name: priceMax
+          in: query
+          schema:
+            type: integer
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Post"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+
+  /search/accounts:
+    get:
+      tags: [Search]
+      summary: Search user or restaurant accounts
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "foodie"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/UserPublic"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+
+  /search/trending:
+    get:
+      tags: [Search]
+      summary: Get trending hashtags and popular dishes
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          trendingHashtags:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                tag:
+                                  type: string
+                                  example: "#banhmi"
+                                postCount:
+                                  type: integer
+                                  example: 2340
+                          trendingDishes:
+                            type: array
+                            items:
+                              type: string
+                            example: ["Banh mi", "Bun dau mam tom", "Com tam"]
+
+  # ════════════════════════════════════════
+  # NOTIFICATIONS
+  # ════════════════════════════════════════
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Get notifications list
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: isRead
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Notification"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+
+  /notifications/{notificationId}/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark notification as read
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Update successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ════════════════════════════════════════
+  # REPORTS
+  # ════════════════════════════════════════
+  /reports:
+    post:
+      tags: [Reports]
+      summary: Report post or user violation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportRequest"
+      responses:
+        "201":
+          description: Report submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ════════════════════════════════════════
+  # ADMIN
+  # ════════════════════════════════════════
+
+  # ── Admin: Users ─────────────────────
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: "[Admin] List users"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: Search by username, email, or ID
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Active, Banned, Suspended]
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [User, RestaurantAccount, Admin]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/UserPrivate"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+
+  /admin/users/{userId}/status:
+    patch:
+      tags: [Admin]
+      summary: "[Admin] Lock or unlock user account"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, reason]
+              properties:
+                status:
+                  type: string
+                  enum: [Active, Banned, Suspended]
+                reason:
+                  type: string
+                  example: "Terms violation: advertising spam"
+      responses:
+        "200":
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/users/{userId}/warn:
+    post:
+      tags: [Admin]
+      summary: "[Admin] Issue warning to user"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  example: "Your account is posting spam content. Please follow community guidelines."
+      responses:
+        "200":
+          description: Warning sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── Admin: Posts ─────────────────────
+  /admin/posts:
+    get:
+      tags: [Admin]
+      summary: "[Admin] List all posts"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Active, Hidden, Deleted]
+        - name: authorId
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Post"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
+
+  /admin/posts/{postId}/pin:
+    patch:
+      tags: [Admin]
+      summary: "[Admin] Pin or unpin post"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isPinned]
+              properties:
+                isPinned:
+                  type: boolean
+      responses:
+        "200":
+          description: Update successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/posts/{postId}/hide:
+    patch:
+      tags: [Admin]
+      summary: "[Admin] Hide or unhide post"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isHidden]
+              properties:
+                isHidden:
+                  type: boolean
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Update successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/posts/{postId}:
+    delete:
+      tags: [Admin]
+      summary: "[Admin] Permanently delete violating post"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Delete successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── Admin: Reports ───────────────────
+  /admin/reports:
+    get:
+      tags: [Admin]
+      summary: "[Admin] List violation reports"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Pending, Resolved, Dismissed]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [Low, Medium, High]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            reportId:
+                              type: integer
+                            reporter:
+                              $ref: "#/components/schemas/UserPublic"
+                            reportedPost:
+                              $ref: "#/components/schemas/Post"
+                            reportedUser:
+                              $ref: "#/components/schemas/UserPublic"
+                            reason:
+                              type: string
+                            description:
+                              type: string
+                            status:
+                              type: string
+                              enum: [Pending, Resolved, Dismissed]
+                            priority:
+                              type: string
+                              enum: [Low, Medium, High]
+                            createdAt:
+                              type: string
+                              format: date-time
+
+  /admin/reports/{reportId}/process:
+    patch:
+      tags: [Admin]
+      summary: "[Admin] Process violation report"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, action]
+              properties:
+                status:
+                  type: string
+                  enum: [Resolved, Dismissed]
+                action:
+                  type: string
+                  enum: [DeletePost, WarnUser, BanUser, NoAction]
+                  description: "Administrative action taken"
+                note:
+                  type: string
+                  example: "Post deleted and warning sent to user"
+      responses:
+        "200":
+          description: Report processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── Admin: AI Config ─────────────────
+  /admin/ai-configs:
+    get:
+      tags: [Admin]
+      summary: "[Admin] List AI model configurations"
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            configId:
+                              type: integer
+                            modelName:
+                              type: string
+                              example: "gemini-2.0-flash"
+                            provider:
+                              type: string
+                              example: "Google"
+                            isActive:
+                              type: boolean
+                            maxTokens:
+                              type: integer
+                            temperature:
+                              type: number
+
+  /admin/ai-configs/{configId}/active:
+    put:
+      tags: [Admin]
+      summary: "[Admin] Switch active AI model"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: configId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Active AI model changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/ai-prompts:
+    get:
+      tags: [Admin]
+      summary: "[Admin] List prompt templates"
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            promptId:
+                              type: integer
+                            name:
+                              type: string
+                              example: "Food Suggestion Prompt v2"
+                            content:
+                              type: string
+                            isActive:
+                              type: boolean
+                            updatedAt:
+                              type: string
+                              format: date-time
+
+  /admin/ai-prompts/{promptId}:
+    put:
+      tags: [Admin]
+      summary: "[Admin] Edit prompt template"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: promptId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                name:
+                  type: string
+                content:
+                  type: string
+                isActive:
+                  type: boolean
+      responses:
+        "200":
+          description: Prompt updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/ai-stats:
+    get:
+      tags: [Admin]
+      summary: "[Admin] AI performance metrics"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+          example: "2026-09-01"
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+          example: "2026-09-30"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          totalRequests:
+                            type: integer
+                            example: 15420
+                          errorRate:
+                            type: number
+                            example: 0.023
+                          avgRating:
+                            type: number
+                            example: 4.2
+                          feedbackCount:
+                            type: integer
+                            example: 3210
+                          topMoodKeywords:
+                            type: array
+                            items:
+                              type: string
+                            example: ["sad", "craving spicy", "eating alone"]
+
+  # ── Admin: Notifications & AuditLogs ─
+  /admin/system-notifications:
+    post:
+      tags: [Admin]
+      summary: "[Admin] Broadcast system notification to users"
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, message]
+              properties:
+                title:
+                  type: string
+                  example: "Dishcision new feature update!"
+                message:
+                  type: string
+                  example: "Experience our new decision wheel interface today."
+                targetGroup:
+                  type: string
+                  enum: [All, User, RestaurantAccount]
+                  default: All
+                  description: "Target user group for notification"
+      responses:
+        "201":
+          description: Notification broadcast successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/audit-logs:
+    get:
+      tags: [Admin]
+      summary: "[Admin] View admin audit logs"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: adminId
+          in: query
+          schema:
+            type: integer
+        - name: action
+          in: query
+          schema:
+            type: string
+            example: "BAN_USER"
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/AuditLog"
+                      pagination:
+                        $ref: "#/components/schemas/PaginatedMeta"
